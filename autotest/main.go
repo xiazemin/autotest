@@ -32,6 +32,9 @@ import (
 	"os"
 
 	"github.com/xiazemin/autotest/autotest/process"
+	"io/ioutil"
+	"fmt"
+	"strings"
 )
 
 var (
@@ -56,7 +59,16 @@ func main() {
 	vwriteOutput:=true
 	allFuncs=&vallFuncs
 	writeOutput=&vwriteOutput
-	args=[]string{"/Users/didi/goLang/src/github.com/xiazemin/ast/example/"}
+	//args=[]string{"/Users/didi/goLang/src/github.com/xiazemin/ast/"}
+	//遍历打印所有的文件名
+
+	var args1 []string
+	for _,dir:=range args{
+		s, _ := GetAllDir(rtrim(dir))
+		args1=append(args1,s...)
+	}
+	args=append(args,args1...)
+
 	process.Run(os.Stdout, args, &process.Options{
 		OnlyFuncs:     *onlyFuncs,
 		ExclFuncs:     *exclFuncs,
@@ -67,4 +79,34 @@ func main() {
 		WriteOutput:   *writeOutput,
 		TemplateDir:   *templateDir,
 	})
+}
+
+func GetAllDir(pathname string) ([]string, error) {
+	//fmt.Println(s,pathname)
+	//s=append(s,pathname)
+	var s []string
+	rd, err := ioutil.ReadDir(pathname)
+	if err != nil {
+		fmt.Println("read dir fail:", err)
+		return s, err
+	}
+	for _, fi := range rd {
+		if fi.IsDir() {
+			fullDir := pathname + "/" + fi.Name()
+			s1,_:=GetAllDir(fullDir)
+			s=append(s,s1...)
+			s=append(s,fullDir)
+		}
+	}
+	return s, nil
+}
+
+func rtrim(str string)string{
+	if str==""{
+		return str
+	}
+	if str[0]=='/'{
+		return "/"+strings.Trim(str,"/")
+	}
+	return strings.Trim(str,"/")
 }

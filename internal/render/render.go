@@ -53,7 +53,74 @@ func initEmptyTmpls() {
 		"Param":    parameterName,
 		"Want":     wantName,
 		"Got":      gotName,
+		"InitParam": initParam,
 	})
+}
+
+func initParam(val *models.Field)interface{}{
+	fmt.Println(val)
+	if val.IsBasicType() {
+		switch val.Type.Value {
+		case "int", "int8", "int16", "int32", "int64":
+			return -1
+		case "uint", "uint8", "uint16", "uint32", "uint64":
+			return 0
+		case "uintptr":
+			return nil
+		case "float64", "float32":
+			return 0.0
+		case "string":
+			return "\"\""
+		case "byte":
+			return byte(1)
+		case "rune":
+			return rune(1)
+		case "bool":
+			return true
+		case "complex64", "complex128":
+			return 3.2 + 1.2i
+		default:
+			fmt.Println("simple type error:",val.Type.Value)
+			return "nil"
+		}
+	}else if val.IsStruct(){
+		return val.Type.Value+"{}"
+	}else if val.IsWriter(){
+		return "io.Writer"
+	}else if val.Type.IsVariadic{
+		return "[]"+val.Type.Value
+	}else if val.Type.IsStar {
+			return "*" + val.Type.Value
+	}else{
+		switch val.Type.Value {
+			case "[]int","[]int8", "[]int16", "[]int32", "[]int64":
+				return val.Type.Value+"{-1,0,1}"
+			case "[]uint", "[]uint8", "[]uint16", "[]uint32", "[]uint64":
+				return val.Type.Value+"{0,1,2}"
+		        case "[]float64", "[]float32":
+				return val.Type.Value+"{0.0,-1.0}"
+		        case "[]bool":
+			return val.Type.Value+"{true,false}"
+		}
+		fmt.Println(val.Type.Value,val.Type,val)
+		return "nil"
+	}
+	//
+	//fmt.Println(v, fmt.Sprintf("%T", v))
+	//switch t := v.(type) {
+	//
+	//case int,int8,int16,int32,int64:
+	//	return 0
+	//case float64,float32:
+	//	return 0.0
+	////... etc
+	//case string:
+	//	return ""
+	//default:
+	//	_ = t
+	//	return fmt.Sprintf("%T", v)
+	//}
+	return "ttt"
 }
 
 func fieldName(f *models.Field) string {

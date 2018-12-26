@@ -43,8 +43,18 @@ func {{.TestName}}(t *testing.T) {
 		{
 		  name:"test case example",
 		  {{- if .TestParameters}}
-         			args:args{},
+         			args:args{
+         			{{- if .TestParameters}}
+                    		{{- range .TestParameters}}
+                    				{{Param .}}:{{InitParam .}},
+                    		{{- end}}
+                    {{- end}}
+
+         			},
           {{- end}}
+            {{- if .ReturnsError}}
+                   wantErr:true,
+            {{- end}}
 		},
 	}
 	for {{if (or .Subtests (not .IsNaked))}} _, tt := {{end}} range tests {
