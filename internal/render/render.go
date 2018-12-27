@@ -84,13 +84,29 @@ func initParam(val *models.Field)interface{}{
 			return "nil"
 		}
 	}else if val.IsStruct(){
+		fmt.Println(val)
 		return val.Type.Value+"{}"
 	}else if val.IsWriter(){
 		return "io.Writer"
 	}else if val.Type.IsVariadic{
 		return "[]"+val.Type.Value
 	}else if val.Type.IsStar {
-			return "*" + val.Type.Value
+		switch val.Type.Value {
+		case "int", "int8", "int16", "int32", "int64",
+			"uint", "uint8", "uint16", "uint32", "uint64",
+			"uintptr",
+			"float64", "float32",
+			"string",
+			"byte",
+			"rune",
+			"bool",
+			"complex64", "complex128":
+			return "new("+ val.Type.Value+")"
+		default:
+			return "&" + val.Type.Value+"{}"
+			return "nil"
+		}
+
 	}else{
 		switch val.Type.Value {
 			case "[]int","[]int8", "[]int16", "[]int32", "[]int64":
@@ -100,11 +116,14 @@ func initParam(val *models.Field)interface{}{
 		        case "[]float64", "[]float32":
 				return val.Type.Value+"{0.0,-1.0}"
 		        case "[]bool":
-			return val.Type.Value+"{true,false}"
+				return val.Type.Value+"{true,false}"
+		        case "interface{}":
+				return val.Type.Value
 		}
-		fmt.Println(val.Type.Value,val.Type,val)
-		return "nil"
+		fmt.Println(val.Type.Value,val.Type,val,val.IsStruct())
+		return val.Type.Value+"{}"
 	}
+
 	//
 	//fmt.Println(v, fmt.Sprintf("%T", v))
 	//switch t := v.(type) {
