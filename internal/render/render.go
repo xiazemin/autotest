@@ -120,7 +120,15 @@ func initParam(val *models.Field)interface{}{
 		        case "interface{}":
 				return val.Type.Value
 		}
-		fmt.Println(val.Type.Value,val.Type,val,val.IsStruct())
+		fmt.Println(val.Type.Value,val.Type,val,val.Type.Underlying,val.IsStruct())
+		/*
+&{s MyStruct 0}
+MyStruct MyStruct &{s MyStruct 0} false
+&{sp *MyStruct 1}
+&{a *int 2}
+&{c *string 3}
+Generated TestSetStruct
+		 */
 		return val.Type.Value+"{}"
 	}
 

@@ -122,7 +122,9 @@ func (p *Parser) parseTypes(fset *token.FileSet, fs []*ast.File) (map[string]typ
 	conf.Check("", fset, fs, ti)
 	ul := make(map[string]types.Type)
 	el := make(map[*types.Struct]ast.Expr)
+	fmt.Println("查看struct定义:",ti,*fset,len(fs))
 	for e, t := range ti.Types {
+		fmt.Println(e,t)
 		// Collect the underlying types.
 		ul[t.Type.String()] = t.Type.Underlying()
 		// Collect structs to determine the fields of a receiver.

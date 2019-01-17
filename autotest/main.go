@@ -59,7 +59,7 @@ func main() {
 	vwriteOutput:=true
 	allFuncs=&vallFuncs
 	writeOutput=&vwriteOutput
-	//args=[]string{"/Users/didi/goLang/src/github.com/xiazemin/ast/example"}
+	args=[]string{"/Users/didi/goLang/src/github.com/xiazemin/ast/struct"}
 	//遍历打印所有的文件名
 
 	var args1 []string
