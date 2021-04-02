@@ -28,6 +28,7 @@ func {{.TestName}}(t *testing.T) {
 			{{- else}}
 				{{Receiver .}} {{.Type}}
 			{{- end}}
+			 prepare func(fields *fields, args *args)
 		{{- end}}
 		{{- if .TestParameters}}
 			args args
@@ -40,8 +41,24 @@ func {{.TestName}}(t *testing.T) {
 		{{- end}}
 	}{
 		// TODO: Add test cases.
+		{
+			name: "case1",
+			prepare: func(fileds *fields, args *args) {
+				gomock.InOrder(
+					fileds.visitorLister.EXPECT().ListVisitors(gomock.Any()).Return([]greet.Visitor{&greet.Visitor{"Peter", "TheSmart"}}, nil).Times(2),
+					fileds.greeter.EXPECT().Hello(gomock.Any()).AnyTimes())
+			},
+		},
 	}
 	for {{if (or .Subtests (not .IsNaked))}} {{if .Named}}name{{else}}_{{end}}, tt := {{end}} range tests {
+		tt:=tt
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		tt.fields.visitorLister = mock_greet.NewMockVisitorLister(ctrl)
+		tt.fields.greeter = mock_greet.NewMockGreeter(ctrl)
+		if tt.prepare != nil {
+			tt.prepare(&tt.fields, &tt.args)
+		}
 		{{- if .Subtests}}
 		{{- if .Parallel}}tt := tt;{{end}}
 		{{- if and .Parallel .Named}}name := name;{{ end }}
