@@ -1,7 +1,7 @@
 package testdata
 
-import "github.com/xiazemin/autotest"
+import "net/url"
 
-type someIndirectImportedStruct gotests.Options
+type someIndirectImportedStruct url.URL
 
 func (smtg *someIndirectImportedStruct) Foo037() {}

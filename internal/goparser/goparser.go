@@ -10,10 +10,9 @@ import (
 	"go/token"
 	"go/types"
 	"io/ioutil"
-
 	"strings"
 
-	"github.com/xiazemin/autotest/internal/models"
+	"github.com/cweill/gotests/internal/models"
 )
 
 // ErrEmptyFile represents an empty file error.
@@ -122,9 +121,7 @@ func (p *Parser) parseTypes(fset *token.FileSet, fs []*ast.File) (map[string]typ
 	conf.Check("", fset, fs, ti)
 	ul := make(map[string]types.Type)
 	el := make(map[*types.Struct]ast.Expr)
-	fmt.Println("查看struct定义:",ti,*fset,len(fs))
 	for e, t := range ti.Types {
-		fmt.Println(e,t)
 		// Collect the underlying types.
 		ul[t.Type.String()] = t.Type.Underlying()
 		// Collect structs to determine the fields of a receiver.
@@ -237,7 +234,7 @@ func parseReceiver(fl *ast.FieldList, ul map[string]types.Type, el map[*types.St
 	}
 	r.Fields = append(r.Fields, parseFieldList(st.(*ast.StructType).Fields, ul)...)
 	for i, f := range r.Fields {
-		// https://github.com/xiazemin/autotest/issues/69
+		// https://github.com/cweill/gotests/issues/69
 		if i >= s.NumFields() {
 			break
 		}

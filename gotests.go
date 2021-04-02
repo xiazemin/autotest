@@ -10,21 +10,26 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/xiazemin/autotest/internal/goparser"
-	"github.com/xiazemin/autotest/internal/input"
-	"github.com/xiazemin/autotest/internal/models"
-	"github.com/xiazemin/autotest/internal/output"
+	"github.com/cweill/gotests/internal/goparser"
+	"github.com/cweill/gotests/internal/input"
+	"github.com/cweill/gotests/internal/models"
+	"github.com/cweill/gotests/internal/output"
 )
 
 // Options provides custom filters and parameters for generating tests.
 type Options struct {
-	Only        *regexp.Regexp        // Includes only functions that match.
-	Exclude     *regexp.Regexp        // Excludes functions that match.
-	Exported    bool                  // Include only exported methods
-	PrintInputs bool                  // Print function parameters in error messages
-	Subtests    bool                  // Print tests using Go 1.7 subtests
-	Importer    func() types.Importer // A custom importer.
-	TemplateDir string                // Path to custom template set
+	Only           *regexp.Regexp         // Includes only functions that match.
+	Exclude        *regexp.Regexp         // Excludes functions that match.
+	Exported       bool                   // Include only exported methods
+	PrintInputs    bool                   // Print function parameters in error messages
+	Subtests       bool                   // Print tests using Go 1.7 subtests
+	Parallel       bool                   // Print tests that runs the subtests in parallel.
+	Named          bool                   // Create Map instead of slice
+	Importer       func() types.Importer  // A custom importer.
+	Template       string                 // Name of custom template set
+	TemplateDir    string                 // Path to custom template set
+	TemplateParams map[string]interface{} // Custom external parameters
+	TemplateData   [][]byte               // Data slice for templates
 }
 
 // A GeneratedTest contains information about a test file with generated tests.
@@ -114,10 +119,16 @@ func generateTest(src models.Path, files []models.Path, opt *Options) (*Generate
 	if len(funcs) == 0 {
 		return nil, nil
 	}
+
 	b, err := output.Process(h, funcs, &output.Options{
-		PrintInputs: opt.PrintInputs,
-		Subtests:    opt.Subtests,
-		TemplateDir: opt.TemplateDir,
+		PrintInputs:    opt.PrintInputs,
+		Subtests:       opt.Subtests,
+		Parallel:       opt.Parallel,
+		Named:          opt.Named,
+		Template:       opt.Template,
+		TemplateDir:    opt.TemplateDir,
+		TemplateParams: opt.TemplateParams,
+		TemplateData:   opt.TemplateData,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("output.Process: %v", err)
