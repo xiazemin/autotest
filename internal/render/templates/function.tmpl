@@ -55,11 +55,9 @@ func {{.TestName}}(t *testing.T) {
 				{{- range .Fields}}
 				    {{- if .IsInterface}}
 					   {{$F:=Field .}}
-					   {{range .InterfacesInfo.MethodInfoList}}
-					     fields.{{$F}}.EXPECT().{{.Name}}({{range .Params}}
-						 {{.}},
-						 {{end}}).Return({{range .Return}}
-						 {{.}},
+					   {{- range .InterfacesInfo.MethodInfoList}}
+					     fields.{{$F}}.EXPECT().{{.Name}}({{- range .Params}}{{.}},
+						 {{end}}).Return({{- range .Return}}{{.}},
 						 {{end}}).Times(2),
 					   {{end}}
 					{{end}}
@@ -80,9 +78,7 @@ func {{.TestName}}(t *testing.T) {
 			  {{- if .Fields}}
 				{{- range .Fields}}
 				    {{- if .IsInterface}}
-					   tt.fields.{{Field .}} = mock_{{.InterfacesInfo.PkgName}}.NewMock{{.InterfacesInfo.Name}}(ctrl)
-					{{end}}
-			    {{end}}
+					   tt.fields.{{Field .}} = mock_{{.InterfacesInfo.PkgName}}.NewMock{{.InterfacesInfo.Name}}(ctrl){{end}}{{end}}
 				if tt.prepare != nil {
 				  tt.prepare(&tt.fields, &tt.args)
 				}
