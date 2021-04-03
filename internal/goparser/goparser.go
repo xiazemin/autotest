@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/cweill/gotests/internal/models"
+	"golang.org/x/tools/go/packages"
 )
 
 // ErrEmptyFile represents an empty file error.
@@ -23,7 +24,8 @@ type Result struct {
 	// The package name and imports of a Go file.
 	Header *models.Header
 	// All the functions and methods in a Go file.
-	Funcs []*models.Function
+	Funcs      []*models.Function
+	InterFaces map[string][]*models.Interfaces
 }
 
 // Parser can parse Go files.
@@ -48,15 +50,86 @@ func (p *Parser) Parse(srcPath string, files []models.Path) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
+	interFaces := p.parseInterface(f.Imports)
+	funcs := p.parseFunctions(fset, f, fs, interFaces)
 	return &Result{
 		Header: &models.Header{
 			Comments: parsePkgComment(f, f.Package),
 			Package:  f.Name.String(),
-			Imports:  parseImports(f.Imports),
+			Imports:  parseImports(f.Imports, funcs),
 			Code:     goCode(b, f),
 		},
-		Funcs: p.parseFunctions(fset, f, fs),
+		InterFaces: interFaces,
+		Funcs:      funcs,
 	}, nil
+}
+
+func (p *Parser) parseInterface(imps []*ast.ImportSpec) map[string][]*models.Interfaces {
+	r := make(map[string][]*models.Interfaces)
+	var pathImported []string
+	for _, i := range imps {
+		if i.Name != nil {
+			//fmt.Println("name", i.Name.Name)
+		}
+		if i.Path != nil {
+			if i.Path.Value == "\"fmt\"" {
+				continue
+			}
+			//fmt.Println("path", i.Path.Value)
+			pathImported = append(pathImported, strings.Trim(i.Path.Value, "\""))
+		}
+	}
+	if len(pathImported) < 1 {
+		return r
+	}
+	cfg := &packages.Config{Mode: packages.NeedFiles | packages.NeedSyntax | packages.NeedName}
+	//fmt.Println(pathImported)
+	pkgs, err := packages.Load(cfg, pathImported...)
+	if err != nil {
+		fmt.Println(err)
+	}
+	for _, pkg := range pkgs {
+		//	fmt.Println(pkg.ID, pkg.Name, pkg.GoFiles)
+		for _, f := range pkg.Syntax {
+			for _, decl := range f.Decls {
+				//fmt.Println(decl)
+				interfaces := getInterface(decl, pkg.ID, pkg.Name, pkg.GoFiles)
+				r[pkg.ID] = append(r[pkg.ID], interfaces...)
+			}
+		}
+	}
+	return r
+}
+
+func getInterface(x ast.Decl, importPath, pkgName string, filePaths []string) []*models.Interfaces {
+	var r []*models.Interfaces
+	if x, ok := x.(*ast.GenDecl); ok {
+		if x.Tok != token.TYPE {
+			return r
+		}
+		for _, x := range x.Specs {
+			if x, ok := x.(*ast.TypeSpec); ok {
+				iname := x.Name
+				if x, ok := x.Type.(*ast.InterfaceType); ok {
+					for _, x := range x.Methods.List {
+						if len(x.Names) == 0 {
+							return r
+						}
+						//					mname := x.Names[0].Name
+						//					fmt.Println("interface:", iname, "method:", mname)
+					}
+					r = append(r, &models.Interfaces{
+						PkgName:    pkgName,
+						FilePath:   filePaths,
+						ImportPath: importPath,
+						Name:       iname.Name,
+						MethodList: x.Methods.List,
+					})
+				}
+			}
+		}
+	}
+	return r
 }
 
 func (p *Parser) readFile(srcPath string) ([]byte, error) {
@@ -94,7 +167,7 @@ func (p *Parser) parseFiles(fset *token.FileSet, f *ast.File, files []models.Pat
 	return fs, nil
 }
 
-func (p *Parser) parseFunctions(fset *token.FileSet, f *ast.File, fs []*ast.File) []*models.Function {
+func (p *Parser) parseFunctions(fset *token.FileSet, f *ast.File, fs []*ast.File, interfaces map[string][]*models.Interfaces) []*models.Function {
 	ul, el := p.parseTypes(fset, fs)
 	var funcs []*models.Function
 	for _, d := range f.Decls {
@@ -102,7 +175,7 @@ func (p *Parser) parseFunctions(fset *token.FileSet, f *ast.File, fs []*ast.File
 		if !ok {
 			continue
 		}
-		funcs = append(funcs, parseFunc(fDecl, ul, el))
+		funcs = append(funcs, parseFunc(fDecl, ul, el, interfaces))
 	}
 	return funcs
 }
@@ -177,14 +250,14 @@ func goCode(b []byte, f *ast.File) []byte {
 	return b[furthestPos:]
 }
 
-func parseFunc(fDecl *ast.FuncDecl, ul map[string]types.Type, el map[*types.Struct]ast.Expr) *models.Function {
+func parseFunc(fDecl *ast.FuncDecl, ul map[string]types.Type, el map[*types.Struct]ast.Expr, interfaces map[string][]*models.Interfaces) *models.Function {
 	f := &models.Function{
 		Name:       fDecl.Name.String(),
 		IsExported: fDecl.Name.IsExported(),
-		Receiver:   parseReceiver(fDecl.Recv, ul, el),
-		Parameters: parseFieldList(fDecl.Type.Params, ul),
+		Receiver:   parseReceiver(fDecl.Recv, ul, el, interfaces),
+		Parameters: parseFieldList(fDecl.Type.Params, ul, interfaces),
 	}
-	fs := parseFieldList(fDecl.Type.Results, ul)
+	fs := parseFieldList(fDecl.Type.Results, ul, interfaces)
 	i := 0
 	for _, fi := range fs {
 		if fi.Type.String() == "error" {
@@ -198,27 +271,54 @@ func parseFunc(fDecl *ast.FuncDecl, ul map[string]types.Type, el map[*types.Stru
 	return f
 }
 
-func parseImports(imps []*ast.ImportSpec) []*models.Import {
+func parseImports(imps []*ast.ImportSpec, funcs []*models.Function) []*models.Import {
 	var is []*models.Import
 	for _, imp := range imps {
 		var n string
 		if imp.Name != nil {
 			n = imp.Name.String()
 		}
+		isInterface := false
+		for _, f := range funcs {
+			if f.Receiver == nil {
+				continue
+			}
+			for _, field := range f.Receiver.Fields {
+				if field.InterfacesInfo == nil {
+					continue
+				}
+				//fmt.Println(field.InterfacesInfo.PkgName == n, n, field.InterfacesInfo.PkgName, field.InterfacesInfo.PkgPath, field.InterfacesInfo.PkgPath == strings.Trim(imp.Path.Value, "\""), imp.Path.Value)
+				if field.InterfacesInfo.PkgPath == strings.Trim(imp.Path.Value, "\"") {
+					isInterface = true
+					goto OUT
+				}
+			}
+		}
+	OUT:
+		path := strings.Trim(imp.Path.Value, "\"")
+		paths := strings.Split(path, "/")
+		tname := ""
+		if len(paths) > 0 {
+			tname = paths[len(paths)-1]
+		}
+		//fmt.Println(n, imp.Path.Value, isInterface)
 		is = append(is, &models.Import{
-			Name: n,
-			Path: imp.Path.Value,
+			Name:        n,
+			TailName:    tname,
+			Path:        path,
+			IsInterface: isInterface,
+			IsEmpty:     path == "",
 		})
 	}
 	return is
 }
 
-func parseReceiver(fl *ast.FieldList, ul map[string]types.Type, el map[*types.Struct]ast.Expr) *models.Receiver {
+func parseReceiver(fl *ast.FieldList, ul map[string]types.Type, el map[*types.Struct]ast.Expr, interfaces map[string][]*models.Interfaces) *models.Receiver {
 	if fl == nil {
 		return nil
 	}
 	r := &models.Receiver{
-		Field: parseFieldList(fl, ul)[0],
+		Field: parseFieldList(fl, ul, interfaces)[0],
 	}
 	t, ok := ul[r.Type.Value]
 	if !ok {
@@ -232,7 +332,7 @@ func parseReceiver(fl *ast.FieldList, ul map[string]types.Type, el map[*types.St
 	if !found {
 		return r
 	}
-	r.Fields = append(r.Fields, parseFieldList(st.(*ast.StructType).Fields, ul)...)
+	r.Fields = append(r.Fields, parseFieldList(st.(*ast.StructType).Fields, ul, interfaces)...)
 	for i, f := range r.Fields {
 		// https://github.com/cweill/gotests/issues/69
 		if i >= s.NumFields() {
@@ -244,14 +344,14 @@ func parseReceiver(fl *ast.FieldList, ul map[string]types.Type, el map[*types.St
 
 }
 
-func parseFieldList(fl *ast.FieldList, ul map[string]types.Type) []*models.Field {
+func parseFieldList(fl *ast.FieldList, ul map[string]types.Type, interfaces map[string][]*models.Interfaces) []*models.Field {
 	if fl == nil {
 		return nil
 	}
 	i := 0
 	var fs []*models.Field
 	for _, f := range fl.List {
-		for _, pf := range parseFields(f, ul) {
+		for _, pf := range parseFields(f, ul, interfaces) {
 			pf.Index = i
 			fs = append(fs, pf)
 			i++
@@ -260,7 +360,7 @@ func parseFieldList(fl *ast.FieldList, ul map[string]types.Type) []*models.Field
 	return fs
 }
 
-func parseFields(f *ast.Field, ul map[string]types.Type) []*models.Field {
+func parseFields(f *ast.Field, ul map[string]types.Type, interfaces map[string][]*models.Interfaces) []*models.Field {
 	t := parseExpr(f.Type, ul)
 	if len(f.Names) == 0 {
 		return []*models.Field{{
@@ -269,12 +369,119 @@ func parseFields(f *ast.Field, ul map[string]types.Type) []*models.Field {
 	}
 	var fs []*models.Field
 	for _, n := range f.Names {
+		//fmt.Println(n.Name, t)
+		interfacesInfo := getInterfaceInfo(t, interfaces)
+
+		//fmt.Println("interface :", interfacesInfo != nil)
 		fs = append(fs, &models.Field{
-			Name: n.Name,
-			Type: t,
+			Name:           n.Name,
+			Type:           t,
+			IsInterface:    interfacesInfo != nil,
+			InterfacesInfo: interfacesInfo,
 		})
 	}
 	return fs
+}
+
+func isBasicOrSrcType(t string) bool {
+	switch t {
+	case "bool", "string", "int", "int8", "int16", "int32", "int64", "uint",
+		"uint8", "uint16", "uint32", "uint64", "uintptr", "byte", "rune",
+		"float32", "float64", "complex64", "complex128", "error":
+		return true
+	default:
+		return false
+	}
+}
+
+func getInterfaceInfo(t *models.Expression, interfaces map[string][]*models.Interfaces) *models.InterfaceTypeInfo {
+	if t.Value == "" {
+		return nil
+	}
+	v := strings.Split(strings.Trim(t.Value, " "), ".")
+	if len(v) < 2 || v[0] == "" || v[1] == "" {
+		//@TODO current package
+		return nil
+	}
+	for _, ifs := range interfaces {
+		for _, intf := range ifs {
+			if intf.Name == v[1] && intf.PkgName == v[0] {
+				//fmt.Println("type raw info:", t.Value, v, ifs, interfaces)
+
+				var ml []*models.MethodInfo
+				for _, x := range intf.MethodList {
+					if len(x.Names) == 0 {
+						continue
+					}
+					mname := x.Names[0].Name
+					//fmt.Printf("%#v", x.Type)
+
+					var params, results []string
+					if fn, ok := x.Type.(*ast.FuncType); ok {
+						//fmt.Printf("%#v  %#v", fn.Params, fn.Results)
+						for _, p := range fn.Params.List {
+							ll := 1
+							if len(p.Names) > 1 {
+								ll = len(p.Names)
+							}
+							for i := 0; i < ll; i++ {
+								switch tp := p.Type.(type) {
+								case *ast.ArrayType:
+									pkg := intf.PkgName + "."
+									if isBasicOrSrcType(tp.Elt.(*ast.Ident).Name) {
+										pkg = ""
+									}
+									params = append(params, "[]"+pkg+tp.Elt.(*ast.Ident).Name)
+								case *ast.Ident:
+									pkg := intf.PkgName + "."
+									if isBasicOrSrcType(tp.Name) {
+										pkg = ""
+									}
+									params = append(params, pkg+tp.Name)
+								}
+							}
+						}
+						for _, r := range fn.Results.List {
+							ll := 1
+							if len(r.Names) > 1 {
+								ll = len(r.Names)
+							}
+							for i := 0; i < ll; i++ {
+								switch tp := r.Type.(type) {
+								case *ast.ArrayType:
+									pkg := intf.PkgName + "."
+									if isBasicOrSrcType(tp.Elt.(*ast.Ident).Name) {
+										pkg = ""
+									}
+									results = append(results, "[]"+pkg+tp.Elt.(*ast.Ident).Name)
+								case *ast.Ident:
+									pkg := intf.PkgName + "."
+									if isBasicOrSrcType(tp.Name) {
+										pkg = ""
+									}
+									results = append(results, pkg+tp.Name)
+								}
+							}
+						}
+					}
+					//fmt.Println("func decsribe:", params, results)
+					ml = append(ml, &models.MethodInfo{
+						Name:   mname,
+						Params: params,
+						Return: results,
+					})
+				}
+				return &models.InterfaceTypeInfo{
+					PkgName:        v[0],
+					Name:           v[1],
+					PkgPath:        intf.ImportPath,
+					MethodList:     intf.MethodList,
+					MethodInfoList: ml,
+				}
+			}
+		}
+	}
+	return nil
 }
 
 func parseExpr(e ast.Expr, ul map[string]types.Type) *models.Expression {

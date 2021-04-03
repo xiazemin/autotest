@@ -1,6 +1,7 @@
 package models
 
 import (
+	"go/ast"
 	"strings"
 	"unicode"
 )
@@ -25,9 +26,25 @@ func (e *Expression) String() string {
 }
 
 type Field struct {
-	Name  string
-	Type  *Expression
-	Index int
+	Name           string
+	Type           *Expression
+	Index          int
+	IsInterface    bool
+	InterfacesInfo *InterfaceTypeInfo
+}
+
+type InterfaceTypeInfo struct {
+	PkgName        string
+	Name           string
+	PkgPath        string
+	MethodList     []*ast.Field
+	MethodInfoList []*MethodInfo
+}
+
+type MethodInfo struct {
+	Name   string
+	Params []string
+	Return []string
 }
 
 func (f *Field) IsWriter() bool {
@@ -64,6 +81,14 @@ func (f *Field) ShortName() string {
 type Receiver struct {
 	*Field
 	Fields []*Field
+}
+
+type Interfaces struct {
+	PkgName    string
+	FilePath   []string
+	ImportPath string
+	Name       string
+	MethodList []*ast.Field
 }
 
 type Function struct {
@@ -148,7 +173,9 @@ func (f *Function) IsNaked() bool {
 }
 
 type Import struct {
-	Name, Path string
+	Name, Path, TailName string
+	IsInterface          bool
+	IsEmpty              bool
 }
 
 type Header struct {

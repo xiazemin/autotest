@@ -7,7 +7,11 @@ func {{.TestName}}(t *testing.T) {
 			{{- if .Fields}}
 				type fields struct {
 				{{- range .Fields}}
-					{{Field .}} {{.Type}}
+				    {{- if .IsInterface}}
+					   {{Field .}} *mock_{{.InterfacesInfo.PkgName}}.Mock{{.InterfacesInfo.Name}}
+					{{else}}
+					  {{Field .}} {{.Type}}
+					{{end}}
 				{{- end}}
 				}
 			{{- end}}
@@ -25,10 +29,10 @@ func {{.TestName}}(t *testing.T) {
 		{{- with .Receiver}}
 			{{- if and .IsStruct .Fields}}
 				fields fields
+				prepare func(fields *fields, args *args)
 			{{- else}}
 				{{Receiver .}} {{.Type}}
 			{{- end}}
-			 prepare func(fields *fields, args *args)
 		{{- end}}
 		{{- if .TestParameters}}
 			args args
@@ -43,22 +47,48 @@ func {{.TestName}}(t *testing.T) {
 		// TODO: Add test cases.
 		{
 			name: "case1",
-			prepare: func(fileds *fields, args *args) {
+		{{- with .Receiver}}
+		    {{- if .IsStruct}}
+			  {{- if .Fields}}
+				prepare: func(fields *fields, args *args) {
 				gomock.InOrder(
-					fileds.visitorLister.EXPECT().ListVisitors(gomock.Any()).Return([]greet.Visitor{&greet.Visitor{"Peter", "TheSmart"}}, nil).Times(2),
-					fileds.greeter.EXPECT().Hello(gomock.Any()).AnyTimes())
-			},
+				{{- range .Fields}}
+				    {{- if .IsInterface}}
+					   {{$F:=Field .}}
+					   {{range .InterfacesInfo.MethodInfoList}}
+					     fields.{{$F}}.EXPECT().{{.Name}}({{range .Params}}
+						 {{.}},
+						 {{end}}).Return({{range .Return}}
+						 {{.}},
+						 {{end}}).Times(2),
+					   {{end}}
+					{{end}}
+			    {{end}}
+			     )
+				},
+			  {{end}}
+			{{end}}
+		{{end}}
 		},
 	}
 	for {{if (or .Subtests (not .IsNaked))}} {{if .Named}}name{{else}}_{{end}}, tt := {{end}} range tests {
 		tt:=tt
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
-		tt.fields.visitorLister = mock_greet.NewMockVisitorLister(ctrl)
-		tt.fields.greeter = mock_greet.NewMockGreeter(ctrl)
-		if tt.prepare != nil {
-			tt.prepare(&tt.fields, &tt.args)
-		}
+	    {{- with .Receiver}}
+		    {{- if .IsStruct}}
+			  {{- if .Fields}}
+				{{- range .Fields}}
+				    {{- if .IsInterface}}
+					   tt.fields.{{Field .}} = mock_{{.InterfacesInfo.PkgName}}.NewMock{{.InterfacesInfo.Name}}(ctrl)
+					{{end}}
+			    {{end}}
+				if tt.prepare != nil {
+				  tt.prepare(&tt.fields, &tt.args)
+				}
+			  {{end}}
+			{{end}}
+		{{end}}
 		{{- if .Subtests}}
 		{{- if .Parallel}}tt := tt;{{end}}
 		{{- if and .Parallel .Named}}name := name;{{ end }}
