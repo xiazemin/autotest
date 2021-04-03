@@ -13,7 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/xiazemin/autotests/internal/models"
+	"github.com/xiazemin/autotest/internal/models"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -336,7 +336,7 @@ func parseReceiver(fl *ast.FieldList, ul map[string]types.Type, el map[*types.St
 	}
 	r.Fields = append(r.Fields, parseFieldList(st.(*ast.StructType).Fields, ul, interfaces)...)
 	for i, f := range r.Fields {
-		// https://github.com/xiazemin/autotests/issues/69
+		// https://github.com/xiazemin/autotest/issues/69
 		if i >= s.NumFields() {
 			break
 		}

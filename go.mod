@@ -1,4 +1,4 @@
-module github.com/xiazemin/autotests
+module github.com/xiazemin/autotest
 
 require (
 	github.com/mjibson/esc v0.2.0 // indirect

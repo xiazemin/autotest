@@ -11,7 +11,7 @@ import (
 	"os"
 	"regexp"
 
-	"github.com/xiazemin/autotests"
+	gotests "github.com/xiazemin/autotest"
 )
 
 const newFilePerm os.FileMode = 0644
