@@ -9,9 +9,9 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/xiazemin/gotests/internal/models"
-	"github.com/xiazemin/gotests/internal/render/bindata"
-	"github.com/xiazemin/gotests/templates"
+	"github.com/xiazemin/autotests/internal/models"
+	"github.com/xiazemin/autotests/internal/render/bindata"
+	"github.com/xiazemin/autotests/templates"
 )
 
 const (

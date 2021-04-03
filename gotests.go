@@ -10,10 +10,10 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/xiazemin/gotests/internal/goparser"
-	"github.com/xiazemin/gotests/internal/input"
-	"github.com/xiazemin/gotests/internal/models"
-	"github.com/xiazemin/gotests/internal/output"
+	"github.com/xiazemin/autotests/internal/goparser"
+	"github.com/xiazemin/autotests/internal/input"
+	"github.com/xiazemin/autotests/internal/models"
+	"github.com/xiazemin/autotests/internal/output"
 )
 
 // Options provides custom filters and parameters for generating tests.

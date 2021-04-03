@@ -1,4 +1,4 @@
-# gotests [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/xiazemin/gotests/blob/master/LICENSE) [![godoc](https://img.shields.io/badge/go-documentation-blue.svg)](https://godoc.org/github.com/xiazemin/gotests) [![Build Status](https://github.com/xiazemin/gotests/workflows/Go/badge.svg)](https://github.com/xiazemin/gotests/actions) [![Coverage Status](https://coveralls.io/repos/github/xiazemin/gotests/badge.svg?branch=master)](https://coveralls.io/github/xiazemin/gotests?branch=master) [![codebeat badge](https://codebeat.co/badges/7ef052e3-35ff-4cab-88f9-e13393c8ab35)](https://codebeat.co/projects/github-com-xiazemin-gotests) [![Go Report Card](https://goreportcard.com/badge/github.com/xiazemin/gotests)](https://goreportcard.com/report/github.com/xiazemin/gotests)
+# gotests [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/xiazemin/autotests/blob/master/LICENSE) [![godoc](https://img.shields.io/badge/go-documentation-blue.svg)](https://godoc.org/github.com/xiazemin/autotests) [![Build Status](https://github.com/xiazemin/autotests/workflows/Go/badge.svg)](https://github.com/xiazemin/autotests/actions) [![Coverage Status](https://coveralls.io/repos/github/xiazemin/gotests/badge.svg?branch=master)](https://coveralls.io/github/xiazemin/gotests?branch=master) [![codebeat badge](https://codebeat.co/badges/7ef052e3-35ff-4cab-88f9-e13393c8ab35)](https://codebeat.co/projects/github-com-xiazemin-gotests) [![Go Report Card](https://goreportcard.com/badge/github.com/xiazemin/autotests)](https://goreportcard.com/report/github.com/xiazemin/autotests)
 
 `gotests` makes writing Go tests easy. It's a Golang commandline tool that generates [table driven tests](https://github.com/golang/go/wiki/TableDrivenTests) based on its target source files' function and method signatures. Any new dependencies in the test files are automatically imported.
 
@@ -15,7 +15,7 @@ __Minimum Go version:__ Go 1.6
 Use [`go get`](https://golang.org/cmd/go/#hdr-Download_and_install_packages_and_dependencies) to install and update:
 
 ```sh
-$ go get -u github.com/xiazemin/gotests/...
+$ go get -u github.com/xiazemin/autotests/...
 ```
 
 ## Usage

@@ -46,7 +46,7 @@ import (
 	"flag"
 	"os"
 
-	"github.com/xiazemin/gotests/gotests/process"
+	"github.com/xiazemin/autotests/gotests/process"
 )
 
 var (
