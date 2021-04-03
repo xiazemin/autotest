@@ -1,4 +1,4 @@
-module github.com/cweill/gotests
+module github.com/xiazemin/gotests
 
 require (
 	github.com/mjibson/esc v0.2.0 // indirect

@@ -10,8 +10,8 @@ import (
 
 	"golang.org/x/tools/imports"
 
-	"github.com/cweill/gotests/internal/models"
-	"github.com/cweill/gotests/internal/render"
+	"github.com/xiazemin/gotests/internal/models"
+	"github.com/xiazemin/gotests/internal/render"
 )
 
 // we do not need support for aliases in import for now.

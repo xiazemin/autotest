@@ -2,7 +2,22 @@ package process
 
 import (
 	"bytes"
+
 	"testing"
+
+	"fmt"
+
+	"io"
+
+	"io/ioutil"
+
+	"os"
+
+	"regexp"
+
+	"github.com/xiazemin/autotest"
+
+	"github.com/golang/mock/gomock"
 )
 
 func TestRun(t *testing.T) {
@@ -55,6 +70,35 @@ func TestRun(t *testing.T) {
 		Run(out, tt.args, tt.opts)
 		if got := out.String(); got != tt.want {
 			t.Errorf("%q. Run() =\n%v, want\n%v", tt.name, got, tt.want)
+		}
+	}
+}
+
+func Test_parseOptions(t *testing.T) {
+	type args struct {
+		opt *Options
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *gotests.Options
+		wantOut string
+	}{
+		// TODO: Add test cases.
+		{
+			name: "case1",
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		out := &bytes.Buffer{}
+		if got := parseOptions(out, tt.args.opt); !reflect.DeepEqual(got, tt.want) {
+			t.Errorf("%q. parseOptions() = %v, want %v", tt.name, got, tt.want)
+		}
+		if gotOut := out.String(); gotOut != tt.wantOut {
+			t.Errorf("%q. parseOptions() = %v, want %v", tt.name, gotOut, tt.wantOut)
 		}
 	}
 }

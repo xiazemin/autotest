@@ -10,9 +10,10 @@ import (
 	"go/token"
 	"go/types"
 	"io/ioutil"
+	"path/filepath"
 	"strings"
 
-	"github.com/cweill/gotests/internal/models"
+	"github.com/xiazemin/gotests/internal/models"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -50,7 +51,7 @@ func (p *Parser) Parse(srcPath string, files []models.Path) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	interFaces := p.parseInterface(f.Imports)
+	interFaces := p.parseInterface(srcPath, f.Imports)
 	funcs := p.parseFunctions(fset, f, fs, interFaces)
 	return &Result{
 		Header: &models.Header{
@@ -64,7 +65,7 @@ func (p *Parser) Parse(srcPath string, files []models.Path) (*Result, error) {
 	}, nil
 }
 
-func (p *Parser) parseInterface(imps []*ast.ImportSpec) map[string][]*models.Interfaces {
+func (p *Parser) parseInterface(srcPath string, imps []*ast.ImportSpec) map[string][]*models.Interfaces {
 	r := make(map[string][]*models.Interfaces)
 	var pathImported []string
 	for _, i := range imps {
@@ -82,7 +83,8 @@ func (p *Parser) parseInterface(imps []*ast.ImportSpec) map[string][]*models.Int
 	if len(pathImported) < 1 {
 		return r
 	}
-	cfg := &packages.Config{Mode: packages.NeedFiles | packages.NeedSyntax | packages.NeedName}
+	cfg := &packages.Config{Dir: filepath.Dir(srcPath),
+		Mode: packages.NeedFiles | packages.NeedSyntax | packages.NeedName}
 	//fmt.Println(pathImported)
 	pkgs, err := packages.Load(cfg, pathImported...)
 	if err != nil {
@@ -334,7 +336,7 @@ func parseReceiver(fl *ast.FieldList, ul map[string]types.Type, el map[*types.St
 	}
 	r.Fields = append(r.Fields, parseFieldList(st.(*ast.StructType).Fields, ul, interfaces)...)
 	for i, f := range r.Fields {
-		// https://github.com/cweill/gotests/issues/69
+		// https://github.com/xiazemin/gotests/issues/69
 		if i >= s.NumFields() {
 			break
 		}
@@ -420,48 +422,10 @@ func getInterfaceInfo(t *models.Expression, interfaces map[string][]*models.Inte
 					if fn, ok := x.Type.(*ast.FuncType); ok {
 						//fmt.Printf("%#v  %#v", fn.Params, fn.Results)
 						for _, p := range fn.Params.List {
-							ll := 1
-							if len(p.Names) > 1 {
-								ll = len(p.Names)
-							}
-							for i := 0; i < ll; i++ {
-								switch tp := p.Type.(type) {
-								case *ast.ArrayType:
-									pkg := intf.PkgName + "."
-									if isBasicOrSrcType(tp.Elt.(*ast.Ident).Name) {
-										pkg = ""
-									}
-									params = append(params, "[]"+pkg+tp.Elt.(*ast.Ident).Name)
-								case *ast.Ident:
-									pkg := intf.PkgName + "."
-									if isBasicOrSrcType(tp.Name) {
-										pkg = ""
-									}
-									params = append(params, pkg+tp.Name)
-								}
-							}
+							params = append(params, paeseFunctionFields(p, intf.PkgName)...)
 						}
 						for _, r := range fn.Results.List {
-							ll := 1
-							if len(r.Names) > 1 {
-								ll = len(r.Names)
-							}
-							for i := 0; i < ll; i++ {
-								switch tp := r.Type.(type) {
-								case *ast.ArrayType:
-									pkg := intf.PkgName + "."
-									if isBasicOrSrcType(tp.Elt.(*ast.Ident).Name) {
-										pkg = ""
-									}
-									results = append(results, "[]"+pkg+tp.Elt.(*ast.Ident).Name)
-								case *ast.Ident:
-									pkg := intf.PkgName + "."
-									if isBasicOrSrcType(tp.Name) {
-										pkg = ""
-									}
-									results = append(results, pkg+tp.Name)
-								}
-							}
+							results = append(results, paeseFunctionFields(r, intf.PkgName)...)
 						}
 					}
 					//fmt.Println("func decsribe:", params, results)
@@ -482,6 +446,58 @@ func getInterfaceInfo(t *models.Expression, interfaces map[string][]*models.Inte
 		}
 	}
 	return nil
+}
+
+func paeseFunctionFields(r *ast.Field, pkgName string) []string {
+	var results []string
+	if r == nil {
+		return results
+	}
+	ll := 1
+	if len(r.Names) > 1 {
+		ll = len(r.Names)
+	}
+	for i := 0; i < ll; i++ {
+		switch tp := r.Type.(type) {
+		case *ast.StarExpr:
+			pkg := pkgName + "."
+			switch pttp := tp.X.(type) {
+			case *ast.Ident:
+				if isBasicOrSrcType(pttp.Name) {
+					results = append(results, pttp.Name)
+				} else {
+					results = append(results, "&"+pkg+pttp.Name+"{}")
+				}
+			}
+		case *ast.ArrayType:
+			pkg := pkgName + "."
+			switch ttp := tp.Elt.(type) {
+			case *ast.StarExpr:
+				switch pttp := ttp.X.(type) {
+				case *ast.Ident:
+					if isBasicOrSrcType(pttp.Name) {
+						results = append(results, "[]*"+pttp.Name+"{}")
+					} else {
+						results = append(results, "[]*"+pkg+pttp.Name+"{}")
+					}
+				}
+			case *ast.Ident:
+				if isBasicOrSrcType(ttp.Name) {
+					results = append(results, "[]"+ttp.Name+"{}")
+				} else {
+					results = append(results, "[]"+pkg+ttp.Name+"{}")
+				}
+			}
+		case *ast.Ident:
+			pkg := pkgName + "."
+			if isBasicOrSrcType(tp.Name) {
+				results = append(results, tp.Name)
+			} else {
+				results = append(results, pkg+tp.Name+"{}")
+			}
+		}
+	}
+	return results
 }
 
 func parseExpr(e ast.Expr, ul map[string]types.Type) *models.Expression {

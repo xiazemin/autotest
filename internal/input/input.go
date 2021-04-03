@@ -6,7 +6,7 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/cweill/gotests/internal/models"
+	"github.com/xiazemin/gotests/internal/models"
 )
 
 // Files returns all the Golang files for the given path. Ignores hidden files.

@@ -13,3 +13,6 @@ go build -o gotests_bin gotests/main.go
 cp gotests_bin /Users/xiazemin/go/bin/gotests
 
 go generate ./... && go build -o gotests_bin gotests/main.go && cp gotests_bin /Users/xiazemin/go/bin/gotests
+
+
+% go generate ./... && go run gotests/main.go -w -only GreetVisitors /Users/xiazemin/source/tabel_drving_test_learn/exp4/party.go   
