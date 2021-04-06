@@ -98,6 +98,12 @@ type Function struct {
 	Parameters   []*Field
 	Results      []*Field
 	ReturnsError bool
+	Calls        []Call
+}
+
+type Call struct {
+	FunctionName string
+	Receiver     string
 }
 
 func (f *Function) TestParameters() []*Field {

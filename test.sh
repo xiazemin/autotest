@@ -16,3 +16,10 @@ go generate ./... && go build -o gotests_bin gotests/main.go && cp gotests_bin /
 
 
 % go generate ./... && go run gotests/main.go -w -only GreetVisitors /Users/xiazemin/source/tabel_drving_test_learn/exp4/party.go   
+
+
+ % go get -u github.com/cweill/gotests/...
+
+ https://tonybai.com/2020/12/10/a-kind-of-thinking-about-how-to-trace-function-call-chain/
+
+ https://www.coder.work/article/194041

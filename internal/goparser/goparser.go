@@ -252,10 +252,34 @@ func goCode(b []byte, f *ast.File) []byte {
 	return b[furthestPos:]
 }
 
+func parseFunctionCalls(body *ast.BlockStmt) []models.Call {
+	var c []models.Call
+	if body == nil {
+		return c
+	}
+	for _, st := range body.List {
+		if exprStmt, ok := st.(*ast.ExprStmt); ok {
+			if call, ok := exprStmt.X.(*ast.CallExpr); ok {
+				if fun, ok := call.Fun.(*ast.SelectorExpr); ok {
+					funcName := fun.Sel.Name
+					//fmt.Println("xiazemin", funcName)
+					c = append(c, models.Call{
+						FunctionName: funcName,
+					})
+				}
+			}
+		}
+	}
+
+	return c
+}
+
 func parseFunc(fDecl *ast.FuncDecl, ul map[string]types.Type, el map[*types.Struct]ast.Expr, interfaces map[string][]*models.Interfaces) *models.Function {
+	calls := parseFunctionCalls(fDecl.Body)
 	f := &models.Function{
 		Name:       fDecl.Name.String(),
 		IsExported: fDecl.Name.IsExported(),
+		Calls:      calls,
 		Receiver:   parseReceiver(fDecl.Recv, ul, el, interfaces),
 		Parameters: parseFieldList(fDecl.Type.Params, ul, interfaces),
 	}

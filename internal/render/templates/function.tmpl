@@ -45,29 +45,29 @@ func {{.TestName}}(t *testing.T) {
 		{{- end}}
 	}{
 		// TODO: Add test cases.
-		{
+		/*{
 			name: "case1",
-		{{- with .Receiver}}
-		    {{- if .IsStruct}}
-			  {{- if .Fields}}
+		{{- with .Receiver -}}
+		    {{- if .IsStruct -}}
+			  {{- if .Fields -}}
 				prepare: func(fields *fields, args *args) {
 				gomock.InOrder(
 				{{- range .Fields}}
-				    {{- if .IsInterface}}
+				    {{- if .IsInterface -}}
 					   {{$F:=Field .}}
-					   {{- range .InterfacesInfo.MethodInfoList}}
-					     fields.{{$F}}.EXPECT().{{.Name}}({{- range .Params}}{{.}},
-						 {{end}}).Return({{- range .Return}}{{.}},
+					   {{- range .InterfacesInfo.MethodInfoList -}}
+					     fields.{{$F}}.EXPECT().{{.Name}}({{- range .Params -}}{{.}},
+						 {{end}}).Return({{- range .Return -}}{{.}},
 						 {{end}}).Times(2),
 					   {{end}}
-					{{end}}
+					{{- end -}}
 			    {{end}}
 			     )
 				},
-			  {{end}}
-			{{end}}
-		{{end}}
-		},
+			  {{- end -}}
+			{{- end -}}
+		{{- end -}}
+		},*/
 	}
 	for {{if (or .Subtests (not .IsNaked))}} {{if .Named}}name{{else}}_{{end}}, tt := {{end}} range tests {
 		tt:=tt
