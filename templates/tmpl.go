@@ -318,13 +318,13 @@ nHO4HUWX/wIAAP//vN7yje4KAAA=
 	"/testify/header.tmpl": {
 		name:    "header.tmpl",
 		local:   "testify/header.tmpl",
-		size:    243,
-		modtime: 1617679299,
+		size:    270,
+		modtime: 1617692400,
 		compressed: `
-H4sIAAAAAAAC/2SOPW7EIBCFe04xokqK4EOkchOlSB9N8BgjG7AwqUbv7itj7W6x3Wje935UJ5ljFrKL
-8CTVAka1cg5C7rOkJLkdgKrrguSJPgCzs185CKm67+sEjIlpL7XR2zNh7J8r4IuTAGS7py2ANUREqnEm
-Nx5jblJn9gKk4tdfVffDcXtxDadq+5T7pLPbhtiW/z/nSxpC2TiHDg6hdN68P9BbAAAA///BGMXr8wAA
-AA==
+H4sIAAAAAAAC/2SOPQ7DIAyFd06BmNqhziE6Zak6dK9c4hCUABGhk+W7VyH9idQN8d73PTN31PtI2gyE
+HWUjopgzRkcazikEimURYYYaUOz0SUTNaEd0pJnhuj1FlPJhTrnow8/Q1p+lMsxwwUAi2lSsDCJmc+5H
+dwiz7zW0SxsL5R7tOhKSHe/McEM//emaNTVv5cesjPNleD7AptC4NGF0tde4VOvq+D3iFQAA//9XXt5a
+DgEAAA==
 `,
 	},
 
