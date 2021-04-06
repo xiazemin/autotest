@@ -409,7 +409,7 @@ func getInterfaceInfo(t *models.Expression, interfaces map[string][]*models.Inte
 		for _, intf := range ifs {
 			if intf.Name == v[1] && intf.PkgName == v[0] {
 				//fmt.Println("type raw info:", t.Value, v, ifs, interfaces)
-
+				//@todo need a filter ,filter called functions
 				var ml []*models.MethodInfo
 				for _, x := range intf.MethodList {
 					if len(x.Names) == 0 {
@@ -421,11 +421,16 @@ func getInterfaceInfo(t *models.Expression, interfaces map[string][]*models.Inte
 					var params, results []string
 					if fn, ok := x.Type.(*ast.FuncType); ok {
 						//fmt.Printf("%#v  %#v", fn.Params, fn.Results)
-						for _, p := range fn.Params.List {
-							params = append(params, paeseFunctionFields(p, intf.PkgName)...)
+						if fn.Params != nil {
+							for _, p := range fn.Params.List {
+								params = append(params, paeseFunctionFields(p, intf.PkgName)...)
+							}
 						}
-						for _, r := range fn.Results.List {
-							results = append(results, paeseFunctionFields(r, intf.PkgName)...)
+
+						if fn.Results != nil {
+							for _, r := range fn.Results.List {
+								results = append(results, paeseFunctionFields(r, intf.PkgName)...)
+							}
 						}
 					}
 					//fmt.Println("func decsribe:", params, results)

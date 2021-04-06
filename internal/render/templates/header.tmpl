@@ -4,11 +4,8 @@
 package {{.Package}}
 
 import (
-{{range .Imports}}
-    {{.Name}} "{{.Path}}"
-    {{if .IsInterface}}
-        mock_{{.TailName}} "{{.Path}}/mock"
-    {{end}}
+{{range .Imports}}{{.Name}} "{{.Path}}"
+    {{if .IsInterface}}mock_{{.TailName}} "{{.Path}}/mock"{{end}}
 {{end}}
 
 "github.com/golang/mock/gomock"
