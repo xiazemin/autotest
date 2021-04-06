@@ -299,6 +299,7 @@ func parseFunc(fDecl *ast.FuncDecl, ul map[string]types.Type, el map[*types.Stru
 
 func parseImports(imps []*ast.ImportSpec, funcs []*models.Function) []*models.Import {
 	var is []*models.Import
+	m := make(map[string]int)
 	for _, imp := range imps {
 		var n string
 		if imp.Name != nil {
@@ -328,14 +329,49 @@ func parseImports(imps []*ast.ImportSpec, funcs []*models.Function) []*models.Im
 			tname = paths[len(paths)-1]
 		}
 		//fmt.Println(n, imp.Path.Value, isInterface)
-		is = append(is, &models.Import{
-			Name:        n,
-			TailName:    tname,
-			Path:        path,
-			IsInterface: isInterface,
-			IsEmpty:     path == "",
-		})
+		if _, ok := m[path]; !ok {
+			is = append(is, &models.Import{
+				Name:        n,
+				TailName:    tname,
+				Path:        path,
+				IsInterface: isInterface,
+				IsEmpty:     path == "",
+			})
+			m[path]++
+		}
+		/**
+		package {{.Package}}
+		import (
+		{{range .Imports -}}
+		{{.Name}} "{{.Path}}"
+		{{end}}
+		{{range .Imports -}}{{if .IsInterface}}
+		mock_{{.TailName}} "{{.Path}}/mock"{{end}}{{end}}
+
+		"github.com/golang/mock/gomock"
+		)
+		*/
+		if isInterface {
+			if _, ok := m[path+"/mock"]; !ok {
+				is = append(is, &models.Import{
+					Name:        "mock_" + tname,
+					TailName:    tname,
+					Path:        path + "/mock",
+					IsInterface: isInterface,
+					IsEmpty:     path == "",
+				})
+				m[path+"/mock"]++
+			}
+		}
 	}
+	is = append(is, &models.Import{
+		Path: "github.com/golang/mock/gomock",
+	})
+	/*
+		for _, i := range is {
+			fmt.Println(i.Path)
+		}
+	*/
 	return is
 }
 

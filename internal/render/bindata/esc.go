@@ -253,13 +253,12 @@ XH2DqAeDPPzP0w5PwSQUv1X0VE+nHU//DQAA//+wy55S8g4AAA==
 	"/templates/header.tmpl": {
 		name:    "header.tmpl",
 		local:   "templates/header.tmpl",
-		size:    270,
-		modtime: 1617692400,
+		size:    143,
+		modtime: 1617715414,
 		compressed: `
-H4sIAAAAAAAC/2SOPQ7DIAyFd06BmNqhziE6Zak6dK9c4hCUABGhk+W7VyH9idQN8d73PTN31PtI2gyE
-HWUjopgzRkcazikEimURYYYaUOz0SUTNaEd0pJnhuj1FlPJhTrnow8/Q1p+lMsxwwUAi2lSsDCJmc+5H
-dwiz7zW0SxsL5R7tOhKSHe/McEM//emaNTVv5cesjPNleD7AptC4NGF0tde4VOvq+D3iFQAA//9XXt5a
-DgEAAA==
+H4sIAAAAAAAC/0TMMQoCMRCF4X5OMaTSwlzCyka8wmCeu4tkdonphnd3IUHsfmZ4X0TBa3NoWmEFLZES
+0cwXaL7utcL7h4zI4wEveiHlsOfbFmhEfswkRbZ67K3r6S/cxmUCd6sgNY1NX8k0QVLOv/oGAAD//1fU
+3eyPAAAA
 `,
 	},
 
