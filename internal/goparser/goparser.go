@@ -258,19 +258,65 @@ func parseFunctionCalls(body *ast.BlockStmt) []models.Call {
 		return c
 	}
 	for _, st := range body.List {
-		if exprStmt, ok := st.(*ast.ExprStmt); ok {
-			if call, ok := exprStmt.X.(*ast.CallExpr); ok {
+		switch ty := st.(type) {
+		case *ast.ExprStmt:
+			if call, ok := ty.X.(*ast.CallExpr); ok {
 				if fun, ok := call.Fun.(*ast.SelectorExpr); ok {
 					funcName := fun.Sel.Name
-					//fmt.Println("xiazemin", funcName)
+					//fmt.Println("xiazemin", funcName, fmt.Sprint(fun.X), fmt.Sprint(fun.Sel))
 					c = append(c, models.Call{
 						FunctionName: funcName,
+						Receiver:     fmt.Sprint(fun.X),
 					})
 				}
 			}
+		case *ast.AssignStmt:
+			for _, r := range ty.Rhs {
+				c = append(c, parseBodyExpr(r)...)
+			}
+			//fmt.Printf("%#v\n", ty.Rhs)
+		case *ast.IfStmt:
+			//fmt.Printf("%#v\n", ty.Cond)
+			c = append(c, parseBodyExpr(ty.Cond)...)
+			cc := parseFunctionCalls(ty.Body)
+			c = append(c, cc...)
+		case *ast.RangeStmt:
+			cc := parseFunctionCalls(ty.Body)
+			c = append(c, cc...)
+		case *ast.ReturnStmt:
+			//fmt.Printf("%#v\n", ty.Results)
+			for _, r := range ty.Results {
+				c = append(c, parseBodyExpr(r)...)
+			}
+		default:
+			//fmt.Printf("%#v\n", st)
 		}
 	}
 
+	return c
+}
+
+func parseBodyExpr(ex ast.Expr) []models.Call {
+	var c []models.Call
+	if ex == nil {
+		return c
+	}
+
+	switch e := ex.(type) {
+	case *ast.CallExpr:
+		if fun, ok := e.Fun.(*ast.SelectorExpr); ok {
+			funcName := fun.Sel.Name
+			//fmt.Println("xiazemin", funcName, fmt.Sprint(fun.X), fmt.Sprint(fun.Sel))
+			c = append(c, models.Call{
+				FunctionName: funcName,
+				Receiver:     fmt.Sprint(fun.X),
+			})
+		}
+	case *ast.BinaryExpr:
+		//fmt.Printf("%#v\n", e)
+	default:
+		//fmt.Printf("%#v\n", e)
+	}
 	return c
 }
 
@@ -280,10 +326,10 @@ func parseFunc(fDecl *ast.FuncDecl, ul map[string]types.Type, el map[*types.Stru
 		Name:       fDecl.Name.String(),
 		IsExported: fDecl.Name.IsExported(),
 		Calls:      calls,
-		Receiver:   parseReceiver(fDecl.Recv, ul, el, interfaces),
-		Parameters: parseFieldList(fDecl.Type.Params, ul, interfaces),
+		Receiver:   parseReceiver(fDecl.Recv, ul, el, interfaces, calls),
+		Parameters: parseFieldList(fDecl.Type.Params, ul, interfaces, calls),
 	}
-	fs := parseFieldList(fDecl.Type.Results, ul, interfaces)
+	fs := parseFieldList(fDecl.Type.Results, ul, interfaces, calls)
 	i := 0
 	for _, fi := range fs {
 		if fi.Type.String() == "error" {
@@ -375,12 +421,12 @@ func parseImports(imps []*ast.ImportSpec, funcs []*models.Function) []*models.Im
 	return is
 }
 
-func parseReceiver(fl *ast.FieldList, ul map[string]types.Type, el map[*types.Struct]ast.Expr, interfaces map[string][]*models.Interfaces) *models.Receiver {
+func parseReceiver(fl *ast.FieldList, ul map[string]types.Type, el map[*types.Struct]ast.Expr, interfaces map[string][]*models.Interfaces, calls []models.Call) *models.Receiver {
 	if fl == nil {
 		return nil
 	}
 	r := &models.Receiver{
-		Field: parseFieldList(fl, ul, interfaces)[0],
+		Field: parseFieldList(fl, ul, interfaces, calls)[0],
 	}
 	t, ok := ul[r.Type.Value]
 	if !ok {
@@ -394,7 +440,7 @@ func parseReceiver(fl *ast.FieldList, ul map[string]types.Type, el map[*types.St
 	if !found {
 		return r
 	}
-	r.Fields = append(r.Fields, parseFieldList(st.(*ast.StructType).Fields, ul, interfaces)...)
+	r.Fields = append(r.Fields, parseFieldList(st.(*ast.StructType).Fields, ul, interfaces, calls)...)
 	for i, f := range r.Fields {
 		// https://github.com/xiazemin/autotest/issues/69
 		if i >= s.NumFields() {
@@ -406,14 +452,14 @@ func parseReceiver(fl *ast.FieldList, ul map[string]types.Type, el map[*types.St
 
 }
 
-func parseFieldList(fl *ast.FieldList, ul map[string]types.Type, interfaces map[string][]*models.Interfaces) []*models.Field {
+func parseFieldList(fl *ast.FieldList, ul map[string]types.Type, interfaces map[string][]*models.Interfaces, calls []models.Call) []*models.Field {
 	if fl == nil {
 		return nil
 	}
 	i := 0
 	var fs []*models.Field
 	for _, f := range fl.List {
-		for _, pf := range parseFields(f, ul, interfaces) {
+		for _, pf := range parseFields(f, ul, interfaces, calls) {
 			pf.Index = i
 			fs = append(fs, pf)
 			i++
@@ -422,7 +468,7 @@ func parseFieldList(fl *ast.FieldList, ul map[string]types.Type, interfaces map[
 	return fs
 }
 
-func parseFields(f *ast.Field, ul map[string]types.Type, interfaces map[string][]*models.Interfaces) []*models.Field {
+func parseFields(f *ast.Field, ul map[string]types.Type, interfaces map[string][]*models.Interfaces, calls []models.Call) []*models.Field {
 	t := parseExpr(f.Type, ul)
 	if len(f.Names) == 0 {
 		return []*models.Field{{
@@ -432,7 +478,7 @@ func parseFields(f *ast.Field, ul map[string]types.Type, interfaces map[string][
 	var fs []*models.Field
 	for _, n := range f.Names {
 		//fmt.Println(n.Name, t)
-		interfacesInfo := getInterfaceInfo(t, interfaces)
+		interfacesInfo := getInterfaceInfo(t, interfaces, calls)
 
 		//fmt.Println("interface :", interfacesInfo != nil)
 		fs = append(fs, &models.Field{
@@ -456,7 +502,16 @@ func isBasicOrSrcType(t string) bool {
 	}
 }
 
-func getInterfaceInfo(t *models.Expression, interfaces map[string][]*models.Interfaces) *models.InterfaceTypeInfo {
+func isCalled(calls []models.Call, name string) bool {
+	for _, c := range calls {
+		if c.FunctionName == name {
+			return true
+		}
+	}
+	return false
+}
+
+func getInterfaceInfo(t *models.Expression, interfaces map[string][]*models.Interfaces, calls []models.Call) *models.InterfaceTypeInfo {
 	if t.Value == "" {
 		return nil
 	}
@@ -477,6 +532,9 @@ func getInterfaceInfo(t *models.Expression, interfaces map[string][]*models.Inte
 					}
 					mname := x.Names[0].Name
 					//fmt.Printf("%#v", x.Type)
+					if !isCalled(calls, mname) {
+						continue
+					}
 
 					var params, results []string
 					if fn, ok := x.Type.(*ast.FuncType); ok {
