@@ -618,6 +618,8 @@ func paeseFunctionFields(r *ast.Field, pkgName string) []string {
 			} else {
 				results = append(results, pkg+tp.Name+"{}")
 			}
+		default:
+			results = append(results, "gomock.Any()")
 		}
 	}
 	return results

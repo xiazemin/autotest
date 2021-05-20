@@ -9,9 +9,9 @@ func {{.TestName}}(t *testing.T) {
 				{{- range .Fields}}
 				    {{- if .IsInterface}}
 					   {{Field .}} *mock_{{.InterfacesInfo.PkgName}}.Mock{{.InterfacesInfo.Name}}
-					{{else}}
+					{{- else}}
 					  {{Field .}} {{.Type}}
-					{{end}}
+					{{- end}}
 				{{- end}}
 				}
 			{{- end}}
@@ -45,29 +45,60 @@ func {{.TestName}}(t *testing.T) {
 		{{- end}}
 	}{
 		// TODO: Add test cases.
-		/*{
-			name: "case1",
-		{{- with .Receiver -}}
+		{
+		name: "case1",
+		{{with .Receiver -}}
+		    {{$Fields:= .Fields}}
+			{{- if and .IsStruct .Fields -}}
+				fields: fields{
+					{{- range $Fields}}
+				    {{- if .IsInterface}}
+					{{- else}}
+					  {{Field .}}:{{(defaultVal .Type)}},// {{.Type}}
+					{{- end}}
+				{{- end}}
+				},
+			{{- else}}
+				{{Receiver .}}:{{(defaultVal .Type)}},// {{.Type}}
+			{{- end}}
+		{{- end}}
+		{{- if .TestParameters}}
+			args:args{
+				{{- range .TestParameters}}
+					{{Param .}} :{{(defaultVal .Type)}},//{{.Type}}
+				{{- end}}
+			},
+		{{- end}}
+		{{- range .TestResults}}
+			{{Want .}} :"",// {{.Type}},
+		{{- end}}
+		{{- if .ReturnsError}}
+			wantErr:false,
+		{{- end}}
+		{{with .Receiver -}}
 		    {{- if .IsStruct -}}
 			  {{- if .Fields -}}
 				prepare: func(fields *fields, args *args) {
 				gomock.InOrder(
-				{{- range .Fields}}
+				{{range .Fields}}
 				    {{- if .IsInterface -}}
 					   {{$F:=Field .}}
 					   {{- range .InterfacesInfo.MethodInfoList -}}
-					     fields.{{$F}}.EXPECT().{{.Name}}({{- range .Params -}}{{.}},
-						 {{end}}).Return({{- range .Return -}}{{.}},
-						 {{end}}).Times(2),
+fields.{{$F}}.EXPECT().{{.Name}}({{$plen:=(len .Params)}} {{- range $ip, $vp := .Params -}}
+{{(defaultValByName $vp)}}{{if gt $plen (add $ip 1)}},{{end}}
+{{- end -}}).Return({{$rlen:=(len .Return)}} {{- range $ir,$vr := .Return -}}
+{{(defaultValByName $vr)}}{{if gt $rlen (add $ir 1)}},{{end}} 
+{{- end}}).AnyTimes(),  //params:{{- range .Params -}} {{.}} {{end}};  return:{{- range .Return -}} {{.}} {{end}}
 					   {{end}}
-					{{- end -}}
-			    {{end}}
+					{{- end}}
+			    {{- end -}}
 			     )
 				},
-			  {{- end -}}
+			  {{end -}}
 			{{- end -}}
 		{{- end -}}
-		},*/
+		},
+
 	}
 	for {{if (or .Subtests (not .IsNaked))}} {{if .Named}}name{{else}}_{{end}}, tt := {{end}} range tests {
 		tt:=tt

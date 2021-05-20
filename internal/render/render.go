@@ -9,6 +9,7 @@ import (
 	"strings"
 	"text/template"
 
+	// "github.com/Masterminds/sprig"
 	"github.com/xiazemin/autotest/internal/models"
 	"github.com/xiazemin/autotest/internal/render/bindata"
 	"github.com/xiazemin/autotest/templates"
@@ -89,13 +90,52 @@ func LoadCustomTemplatesName(name string) error {
 
 func initEmptyTmpls() {
 	tmpls = template.New("render").Funcs(map[string]interface{}{
-		"Field":    fieldName,
-		"Receiver": receiverName,
-		"Param":    parameterName,
-		"Want":     wantName,
-		"Got":      gotName,
+		"Field":            fieldName,
+		"Receiver":         receiverName,
+		"Param":            parameterName,
+		"Want":             wantName,
+		"Got":              gotName,
+		"add":              add,
+		"defaultVal":       generateDefaultVal,
+		"defaultValByName": getDefaultValByName,
 	})
 }
+
+func getDefaultValByName(typeName string) string {
+	switch typeName {
+	case "string":
+		return "\"\""
+	case "bool":
+		return "false"
+	case "int", "int8", "int16", "int32", "int64":
+		return "0"
+	case "uint", "uint8", "uint16", "uint32", "uint64":
+		return "0"
+	case "context.Context":
+		return "context.TODO()"
+	case "error":
+		return "nil"
+	case "float32", "float64":
+		return "0.0"
+	case "gomock.Any()":
+		return typeName
+	}
+	return "New" + typeName + "()"
+}
+
+func generateDefaultVal(typeName *models.Expression) string {
+	value := typeName.Value
+	if typeName.IsStar {
+		return "nil"
+	}
+
+	if typeName.IsVariadic {
+		return "[]" + value + "{" + getDefaultValByName(value) + "}"
+	}
+	return getDefaultValByName(value)
+}
+
+func add(a, b int) int { return a + b }
 
 func fieldName(f *models.Field) string {
 	var n string
