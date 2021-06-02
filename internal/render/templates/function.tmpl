@@ -70,7 +70,7 @@ func {{.TestName}}(t *testing.T) {
 			},
 		{{- end}}
 		{{- range .TestResults}}
-			{{Want .}} :"",// {{.Type}},
+			{{Want .}} :{{(defaultVal .Type)}},//{{.Type}},
 		{{- end}}
 		{{- if .ReturnsError}}
 			wantErr:false,

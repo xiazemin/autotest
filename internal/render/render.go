@@ -120,6 +120,14 @@ func getDefaultValByName(typeName string) string {
 	case "gomock.Any()":
 		return typeName
 	}
+	if len(typeName) > 2 && typeName[0] == '[' && typeName[1] == ']' {
+		return typeName + "{}"
+	}
+	types := strings.Split(typeName, ".")
+	if len(types) > 1 {
+		types[len(types)-1] = "New" + types[len(types)-1]
+		return strings.Join(types, ".")
+	}
 	//return typeName
 	return "New" + typeName + "()"
 }
