@@ -120,6 +120,7 @@ func getDefaultValByName(typeName string) string {
 	case "gomock.Any()":
 		return typeName
 	}
+	//return typeName
 	return "New" + typeName + "()"
 }
 

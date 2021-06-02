@@ -52,6 +52,7 @@ func (p *Parser) Parse(srcPath string, files []models.Path) (*Result, error) {
 		return nil, err
 	}
 	interFaces := p.parseInterface(srcPath, f.Imports)
+	//fmt.Println(interFaces)
 	funcs := p.parseFunctions(fset, f, fs, interFaces)
 	return &Result{
 		Header: &models.Header{
@@ -91,7 +92,7 @@ func (p *Parser) parseInterface(srcPath string, imps []*ast.ImportSpec) map[stri
 		fmt.Println(err)
 	}
 	for _, pkg := range pkgs {
-		//	fmt.Println(pkg.ID, pkg.Name, pkg.GoFiles)
+		//fmt.Println(pkg.ID, pkg.Name, pkg.GoFiles)
 		for _, f := range pkg.Syntax {
 			for _, decl := range f.Decls {
 				//fmt.Println(decl)
@@ -115,10 +116,13 @@ func getInterface(x ast.Decl, importPath, pkgName string, filePaths []string) []
 				if x, ok := x.Type.(*ast.InterfaceType); ok {
 					for _, x := range x.Methods.List {
 						if len(x.Names) == 0 {
-							return r
+							//return r
+							//interface 嵌套interface 情况这里是个bug，所以注释掉
 						}
-						//					mname := x.Names[0].Name
-						//					fmt.Println("interface:", iname, "method:", mname)
+						/*
+								mname := x.Names[0].Name
+							    fmt.Println("interface:", iname, "method:", mname)
+						*/
 					}
 					r = append(r, &models.Interfaces{
 						PkgName:    pkgName,
@@ -522,6 +526,9 @@ func getInterfaceInfo(t *models.Expression, interfaces map[string][]*models.Inte
 	}
 	for _, ifs := range interfaces {
 		for _, intf := range ifs {
+			if intf.PkgName == v[0] {
+				//fmt.Println("type raw info:", t.Value, v, intf.Name, intf.PkgName, intf.ImportPath)
+			}
 			if intf.Name == v[1] && intf.PkgName == v[0] {
 				//fmt.Println("type raw info:", t.Value, v, ifs, interfaces)
 				//@todo need a filter ,filter called functions
