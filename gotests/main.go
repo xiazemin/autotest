@@ -77,15 +77,15 @@ var (
 	named bool
 )
 
-const CurrentVersion = "v0.1.10"
+const CurrentVersion = "v0.1.11"
 
 func main() {
 	flag.Parse()
+	args := flag.Args()
 	if *version {
 		fmt.Println(CurrentVersion)
 		os.Exit(0)
 	}
-	args := flag.Args()
 
 	process.Run(os.Stdout, args, &process.Options{
 		OnlyFuncs:          *onlyFuncs,
