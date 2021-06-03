@@ -44,6 +44,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 
 	"github.com/xiazemin/autotest/gotests/process"
@@ -60,6 +61,7 @@ var (
 	template           = flag.String("template", "", `optional. Specify custom test code templates, e.g. testify. This can also be set via environment variable GOTESTS_TEMPLATE`)
 	templateParamsPath = flag.String("template_params_file", "", "read external parameters to template by json with file")
 	templateParams     = flag.String("template_params", "", "read external parameters to template by json with stdin")
+	version            = flag.Bool("v", false, "prints current roxy version")
 )
 
 var (
@@ -75,8 +77,14 @@ var (
 	named bool
 )
 
+const CurrentVersion = "v0.1.10"
+
 func main() {
 	flag.Parse()
+	if *version {
+		fmt.Println(CurrentVersion)
+		os.Exit(0)
+	}
 	args := flag.Args()
 
 	process.Run(os.Stdout, args, &process.Options{
