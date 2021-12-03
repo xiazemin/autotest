@@ -84,7 +84,7 @@ func {{.TestName}}(t *testing.T) {
 				    {{- if .IsInterface -}}
 					   {{$F:=Field .}}
 					   {{- range .InterfacesInfo.MethodInfoList -}}
-fields.{{$F}}.EXPECT().{{.Name}}({{$plen:=(len .Params)}} {{- range $ip, $vp := .Params -}}
+//fields.{{$F}}.EXPECT().{{.Name}}({{$plen:=(len .Params)}} {{- range $ip, $vp := .Params -}}
 {{(defaultValByName $vp)}}{{if gt $plen (add $ip 1)}},{{end}}
 {{- end -}}).Return({{$rlen:=(len .Return)}} {{- range $ir,$vr := .Return -}}
 {{(defaultValByName $vr)}}{{if gt $rlen (add $ir 1)}},{{end}} 
