@@ -79,6 +79,7 @@ func {{.TestName}}(t *testing.T) {
 		    {{- if .IsStruct -}}
 			  {{- if .Fields -}}
 				prepare: func(fields *fields, args *args) {
+				//httpmock.RegisterResponder("GET", "https://mytest.com/httpmock", httpmock.NewStringResponder(200, `[{"id": 1, "name": "My Great Test"}]`))
 				gomock.InOrder(
 				{{range .Fields}}
 				    {{- if .IsInterface -}}
@@ -104,6 +105,7 @@ func {{.TestName}}(t *testing.T) {
 		tt:=tt
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
+		httpmock.Activate()
 	    {{- with .Receiver}}
 		    {{- if .IsStruct}}
 			  {{- if .Fields}}
@@ -158,7 +160,8 @@ func {{.TestName}}(t *testing.T) {
 				t.Errorf("{{template "message" $f}} {{if $f.ReturnsMultiple}}{{Got .}} {{end}}= %v, want %v", {{template "inputs" $f}} {{Got .}}, tt.{{Want .}})
 				}
 			{{- end}}
-		{{- if .Subtests }} }) {{- end -}}
+		{{- if .Subtests }} }) {{end}}
+		httpmock.DeactivateAndReset()
 	}
 }
 
