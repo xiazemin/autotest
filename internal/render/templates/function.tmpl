@@ -29,7 +29,7 @@ func {{.TestName}}(t *testing.T) {
 		{{- with .Receiver}}
 			{{- if and .IsStruct .Fields}}
 				fields fields
-				prepare func(fields *fields, args *args)
+				prepare func(fields *fields, args *args,mock redismock.ClientMock)
 			{{- else}}
 				{{Receiver .}} {{.Type}}
 			{{- end}}
@@ -78,8 +78,10 @@ func {{.TestName}}(t *testing.T) {
 		{{with .Receiver -}}
 		    {{- if .IsStruct -}}
 			  {{- if .Fields -}}
-				prepare: func(fields *fields, args *args) {
+				prepare: func(fields *fields, args *args,mock redismock.ClientMock) {
 				//httpmock.RegisterResponder("GET", "https://mytest.com/httpmock", httpmock.NewStringResponder(200, `[{"id": 1, "name": "My Great Test"}]`))
+			    //mock.ExpectGet("prefix:10").RedisNil()
+				// mock.Regexp().ExpectSet(key, `[a-z]+`, 30*time.Minute).SetErr(errors.New("FAIL"))
 				gomock.InOrder(
 				{{range .Fields}}
 				    {{- if .IsInterface -}}
@@ -106,6 +108,9 @@ func {{.TestName}}(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 		httpmock.Activate()
+		//db, mock := redismock.NewClientMock()
+		//把 db赋值给redis client github.com/go-redis/redis/v8
+		_,mock:=redismock.NewClientMock()
 	    {{- with .Receiver}}
 		    {{- if .IsStruct}}
 			  {{- if .Fields}}
@@ -113,7 +118,7 @@ func {{.TestName}}(t *testing.T) {
 				    {{- if .IsInterface}}
 					   tt.fields.{{Field .}} = mock_{{.InterfacesInfo.PkgName}}.NewMock{{.InterfacesInfo.Name}}(ctrl){{end}}{{end}}
 				if tt.prepare != nil {
-				  tt.prepare(&tt.fields, &tt.args)
+				  tt.prepare(&tt.fields, &tt.args,mock)
 				}
 			  {{end}}
 			{{end}}
@@ -161,6 +166,9 @@ func {{.TestName}}(t *testing.T) {
 				}
 			{{- end}}
 		{{- if .Subtests }} }) {{end}}
+		if err := mock.ExpectationsWereMet(); err != nil {
+			t.Error(err)
+		}
 		httpmock.DeactivateAndReset()
 	}
 }

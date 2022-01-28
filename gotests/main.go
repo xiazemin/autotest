@@ -77,7 +77,7 @@ var (
 	named bool
 )
 
-const CurrentVersion = "v0.1.12"
+const CurrentVersion = "v0.1.13"
 
 func main() {
 	flag.Parse()

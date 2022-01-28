@@ -418,6 +418,8 @@ func parseImports(imps []*ast.ImportSpec, funcs []*models.Function) []*models.Im
 		Path: "github.com/golang/mock/gomock",
 	}, &models.Import{
 		Path: "github.com/jarcoal/httpmock",
+	}, &models.Import{
+		Path: "github.com/go-redis/redismock/v8",
 	})
 	/*
 		for _, i := range is {
