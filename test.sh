@@ -14,6 +14,7 @@ cp gotests_bin /Users/xiazemin/go/bin/gotests
 
 go generate ./... && go build -o gotests_bin gotests/main.go && cp gotests_bin /Users/xiazemin/go/bin/gotests
 
+//cp gotests_bin /Users/xiazemin/.gvm/pkgsets/go1.18beta2/global/bin/gotests
 
 % go generate ./... && go run gotests/main.go -w -only GreetVisitors ./tabel_drving_test_learn/exp4/party.go   
 
