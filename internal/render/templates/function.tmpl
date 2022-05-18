@@ -29,7 +29,7 @@ func {{.TestName}}(t *testing.T) {
 		{{- with .Receiver}}
 			{{- if and .IsStruct .Fields}}
 				fields fields
-				prepare func(fields *fields, args *args,mock redismock.ClientMock)
+				prepare func(fields *fields, args *args,mock redismock.ClientMock,mysqlmock sqlmock.Sqlmock)
 			{{- else}}
 				{{Receiver .}} {{.Type}}
 			{{- end}}
@@ -81,10 +81,14 @@ func {{.TestName}}(t *testing.T) {
 		{{with .Receiver -}}
 		    {{- if .IsStruct -}}
 			  {{- if .Fields -}}
-				prepare: func(fields *fields, args *args,mock redismock.ClientMock) {
+				prepare: func(fields *fields, args *args,mock redismock.ClientMock,mysqlmock sqlmock.Sqlmock) {
 				//httpmock.RegisterResponder("GET", "https://mytest.com/httpmock", httpmock.NewStringResponder(200, `[{"id": 1, "name": "My Great Test"}]`))
 			    //mock.ExpectGet("prefix:10").RedisNil()
 				// mock.Regexp().ExpectSet(key, `[a-z]+`, 30*time.Minute).SetErr(errors.New("FAIL"))
+				mysqlmock.ExpectBegin()
+				/*mysqlmock.ExpectExec("UPDATE products").WillReturnResult(sqlmock.NewResult(1, 1))
+				mysqlmock.ExpectExec("INSERT INTO product_viewers").WithArgs(2, 3).WillReturnResult(sqlmock.NewResult(1, 1))*/
+				mysqlmock.ExpectCommit()//mysqlmock.ExpectRollback()
 				gomock.InOrder(
 				{{range .Fields}}
 				    {{- if .IsInterface -}}
@@ -114,6 +118,16 @@ func {{.TestName}}(t *testing.T) {
 		//db, mock := redismock.NewClientMock()
 		//把 db赋值给redis client github.com/go-redis/redis/v8
 		_,mock:=redismock.NewClientMock()
+        //mock sql
+		mysqldb, mysqlmock, err := sqlmock.New()
+		if err != nil {
+			t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+		}
+	    defer mysqldb.Close()
+		//以待测函数recordStats为例，如果我们的fields中，或者参数有sql.db替换成mysqldb
+		/*if err = recordStats(mysqldb, 2, 3); err == nil {
+			t.Errorf("was expecting an error, but there was none")
+		}*/
 	    {{- with .Receiver}}
 		    {{- if .IsStruct}}
 			  {{- if .Fields}}
@@ -121,7 +135,7 @@ func {{.TestName}}(t *testing.T) {
 				    {{- if .IsInterface}}
 					   tt.fields.{{Field .}} = mock_{{.InterfacesInfo.PkgName}}.NewMock{{.InterfacesInfo.Name}}(ctrl){{end}}{{end}}
 				if tt.prepare != nil {
-				  tt.prepare(&tt.fields, &tt.args,mock)
+				  tt.prepare(&tt.fields, &tt.args,mock,mysqlmock)
 				}
 			  {{end}}
 			{{end}}
@@ -173,6 +187,10 @@ func {{.TestName}}(t *testing.T) {
 			t.Error(err)
 		}
 		httpmock.DeactivateAndReset()
+		// we make sure that all expectations were met
+		if err := mysqlmock.ExpectationsWereMet(); err != nil {
+			t.Errorf("there were unfulfilled expectations: %s", err)
+		}
 	}
 }
 
