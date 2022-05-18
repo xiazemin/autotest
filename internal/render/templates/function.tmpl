@@ -85,10 +85,10 @@ func {{.TestName}}(t *testing.T) {
 				//httpmock.RegisterResponder("GET", "https://mytest.com/httpmock", httpmock.NewStringResponder(200, `[{"id": 1, "name": "My Great Test"}]`))
 			    //mock.ExpectGet("prefix:10").RedisNil()
 				// mock.Regexp().ExpectSet(key, `[a-z]+`, 30*time.Minute).SetErr(errors.New("FAIL"))
-				mysqlmock.ExpectBegin()
+				//mysqlmock.ExpectBegin()
 				/*mysqlmock.ExpectExec("UPDATE products").WillReturnResult(sqlmock.NewResult(1, 1))
 				mysqlmock.ExpectExec("INSERT INTO product_viewers").WithArgs(2, 3).WillReturnResult(sqlmock.NewResult(1, 1))*/
-				mysqlmock.ExpectCommit()//mysqlmock.ExpectRollback()
+				//mysqlmock.ExpectCommit()//mysqlmock.ExpectRollback()
 				gomock.InOrder(
 				{{range .Fields}}
 				    {{- if .IsInterface -}}
